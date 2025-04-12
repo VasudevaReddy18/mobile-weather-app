@@ -11,7 +11,7 @@ st.set_page_config(page_title="Mobile Weather App", layout="centered")
 
 # SIDEBAR INPUTS
 st.sidebar.title("Settings")
-API_KEY = "a6dd87d2dfc7da3f40aab5350d78beb3"
+API_KEY = st.secrets["c2dcf9d6f8c83d0bf6cd5c937aaad189"]
 city = st.sidebar.text_input("City Name", "New York")
 units = st.sidebar.selectbox("Units", ["metric", "imperial"])
 submit = st.sidebar.button("Get Weather")
