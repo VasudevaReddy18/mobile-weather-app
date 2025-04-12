@@ -16,8 +16,7 @@ A mobile-optimized weather forecast application built using **Python**, **Stream
 ## 📷 Screenshots
 
 <p align="center">
-  <img src="screenshots/mobile_view_1.png" alt="Mobile View" width="300"/>
-  <img src="screenshots/mobile_view_2.png" alt="Forecast Chart" width="300"/>
+  <img src="mobile_view.png" width="300"/>
 </p>
 
 ---
