@@ -24,7 +24,7 @@ A mobile-optimized weather forecast application built using **Python**, **Stream
 
 ## 🚀 Live App
 
-👉 [Launch the App](https://yourusername-mobile-weather-app.streamlit.app)
+👉 [Launch the App](https://mobile-weather-app-hzbcxo2q4yvealfp6rnqc8.streamlit.app/)
 
 > Replace this link with your deployed Streamlit app link after deployment.
 
