@@ -17,7 +17,6 @@ st.sidebar.title("Settings")
 HEAD
 API_KEY = API_KEY = st.secrets["API_KEY"] 
 API_KEY = st.secrets["API_KEY"] if "API_KEY" in st.secrets else "your_openweathermap_api_key_here"
-(Refined version: UI upgrade, unit toggle, map, wind direction, dark mode)
 city = st.sidebar.text_input("City Name", "New York")
 units = st.sidebar.radio("Units", ["Celsius", "Fahrenheit", "Kelvin"])
 dark_mode = st.sidebar.toggle("Dark Mode")
