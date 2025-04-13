@@ -12,6 +12,12 @@ from streamlit_folium import st_folium
 # PAGE SETUP
 st.set_page_config(page_title="Mobile Weather App", layout="centered")
 
+# SESSION STATE INIT
+if "weather_data" not in st.session_state:
+    st.session_state.weather_data = None
+if "stored_city" not in st.session_state:
+    st.session_state.stored_city = ""
+
 # SIDEBAR SETTINGS
 st.sidebar.title("Settings")
 API_KEY = API_KEY = st.secrets["API_KEY"] 
@@ -51,58 +57,62 @@ def fetch_weather(city, units):
     params = {"q": city, "appid": API_KEY, "units": units}
     return requests.get(url, params=params).json()
 
-# MAIN APP LOGIC
+# HANDLE SUBMIT
+if submit:
+    st.session_state.stored_city = city
+    st.session_state.weather_data = fetch_weather(city, api_units)
+
+# DISPLAY APP
 st.title("🌤️ Mobile Weather App")
 
-if submit:
-    if API_KEY == "your_openweathermap_api_key_here":
-        st.error("Please set your OpenWeatherMap API key in Streamlit secrets.")
+if st.session_state.weather_data:
+    city = st.session_state.stored_city
+    data = st.session_state.weather_data
+
+    if data.get("cod") != "200":
+        st.error(f"Error: {data.get('message')}")
     else:
-        data = fetch_weather(city, api_units)
-        if data.get("cod") != "200":
-            st.error(f"Error: {data.get('message')}")
-        else:
-            forecasts = data["list"]
-            lat = data["city"]["coord"]["lat"]
-            lon = data["city"]["coord"]["lon"]
+        forecasts = data["list"]
+        lat = data["city"]["coord"]["lat"]
+        lon = data["city"]["coord"]["lon"]
 
-            # Build DataFrame
-            times, temps, hums, winds, wind_dirs, rains = [], [], [], [], [], []
-            for f in forecasts:
-                dt = datetime.strptime(f["dt_txt"], "%Y-%m-%d %H:%M:%S")
-                times.append(dt)
-                temps.append(f["main"]["temp"])
-                hums.append(f["main"]["humidity"])
-                wind_speed = f["wind"]["speed"]
-                wind_deg = f["wind"]["deg"]
-                winds.append(wind_speed)
-                wind_dirs.append(wind_direction(wind_deg))
-                rains.append(f.get("rain", {}).get("3h", 0))
+        # Build DataFrame
+        times, temps, hums, winds, wind_dirs, rains = [], [], [], [], [], []
+        for f in forecasts:
+            dt = datetime.strptime(f["dt_txt"], "%Y-%m-%d %H:%M:%S")
+            times.append(dt)
+            temps.append(f["main"]["temp"])
+            hums.append(f["main"]["humidity"])
+            wind_speed = f["wind"]["speed"]
+            wind_deg = f["wind"]["deg"]
+            winds.append(wind_speed)
+            wind_dirs.append(wind_direction(wind_deg))
+            rains.append(f.get("rain", {}).get("3h", 0))
 
-            df = pd.DataFrame({
-                "Datetime": times,
-                f"Temperature ({symbol})": temps,
-                "Humidity (%)": hums,
-                f"Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})": winds,
-                "Wind Direction": wind_dirs,
-                "Rainfall (mm)": rains
-            })
+        df = pd.DataFrame({
+            "Datetime": times,
+            f"Temperature ({symbol})": temps,
+            "Humidity (%)": hums,
+            f"Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})": winds,
+            "Wind Direction": wind_dirs,
+            "Rainfall (mm)": rains
+        })
 
-            tab1, tab2 = st.tabs(["📍 Current", "📅 Forecast"])
+        tab1, tab2 = st.tabs(["📍 Current", "📅 Forecast"])
 
-            with tab1:
-                st.subheader(f"Weather in {city}")
-                st.metric("Temperature", f"{temps[0]} {symbol}")
-                st.metric("Humidity", f"{hums[0]}%")
-                st.metric("Wind", f"{winds[0]} {'m/s' if api_units != 'imperial' else 'mph'} {wind_dirs[0]}")
+        with tab1:
+            st.subheader(f"Weather in {city}")
+            st.metric("Temperature", f"{temps[0]} {symbol}")
+            st.metric("Humidity", f"{hums[0]}%")
+            st.metric("Wind", f"{winds[0]} {'m/s' if api_units != 'imperial' else 'mph'} {wind_dirs[0]}")
 
-                st.subheader("📌 Location Map")
-                m = folium.Map(location=[lat, lon], zoom_start=10)
-                folium.Marker([lat, lon], tooltip=city).add_to(m)
-                st_folium(m, height=350, width=700)
+            st.subheader("📌 Location Map")
+            m = folium.Map(location=[lat, lon], zoom_start=10)
+            folium.Marker([lat, lon], tooltip=city).add_to(m)
+            st_folium(m, height=350, width=700)
 
-            with tab2:
-                st.subheader("📈 Forecast Charts")
-                st.line_chart(df.set_index("Datetime")[[f"Temperature ({symbol})", "Humidity (%)", f"Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})", "Rainfall (mm)"]])
-                with st.expander("📋 Detailed Forecast Table"):
-                    st.dataframe(df)
+        with tab2:
+            st.subheader("📈 Forecast Charts")
+            st.line_chart(df.set_index("Datetime")[[f"Temperature ({symbol})", "Humidity (%)", f"Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})", "Rainfall (mm)"]])
+            with st.expander("📋 Detailed Forecast Table"):
+                st.dataframe(df)
