@@ -10,7 +10,7 @@ A mobile-friendly weather forecast app built with Streamlit. It supports:
 ![App Screenshot](screenshot.png)
 
 ## 🚀 Try it live
-[Click here to open in Streamlit Cloud](https://<your-app-link>.streamlit.app)
+[Click here to open in Streamlit Cloud](https://mobile-weather-app-hzbcxo2q4yvealfp6rnqc8.streamlit.app/)
 
 ## 📦 Requirements
 Install required packages with:
