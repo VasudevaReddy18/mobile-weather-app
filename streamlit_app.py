@@ -14,7 +14,6 @@ st.set_page_config(page_title="Mobile Weather App", layout="centered")
 
 # SIDEBAR SETTINGS
 st.sidebar.title("Settings")
-HEAD
 API_KEY = API_KEY = st.secrets["API_KEY"] 
 API_KEY = st.secrets["API_KEY"] if "API_KEY" in st.secrets else "your_openweathermap_api_key_here"
 city = st.sidebar.text_input("City Name", "New York")
