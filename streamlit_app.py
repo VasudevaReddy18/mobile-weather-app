@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -7,28 +8,39 @@ import folium
 from streamlit_folium import st_folium
 
 # PAGE SETUP
-st.set_page_config(page_title="Mobile Weather App", layout="centered")
+st.set_page_config(page_title="Pro Weather App", layout="centered")
 
-# SESSION STATE SETUP
+# SESSION STATE INIT
 if "weather_data" not in st.session_state:
     st.session_state.weather_data = None
 if "stored_city" not in st.session_state:
     st.session_state.stored_city = ""
 
-# SIDEBAR INPUT
-st.sidebar.title("Settings")
+# Location Detection
+@st.cache_data
+def detect_location():
+    try:
+        ip_info = requests.get("https://ipinfo.io/json").json()
+        return ip_info.get("city", "New York")
+    except:
+        return "New York"
+
+# API Setup
 API_KEY = st.secrets["API_KEY"] if "API_KEY" in st.secrets else "your_openweathermap_api_key_here"
-city = st.sidebar.text_input("City Name", "New York")
+
+# UI
+st.sidebar.title("Settings")
 units = st.sidebar.radio("Units", ["Celsius", "Fahrenheit", "Kelvin"])
+city_input = st.sidebar.text_input("City Name (leave blank to auto-detect)", "")
 submit = st.sidebar.button("Get Weather")
 
-# UNITS
+# Units setup
 unit_map = {"Celsius": "metric", "Fahrenheit": "imperial", "Kelvin": "standard"}
 unit_symbol = {"Celsius": "°C", "Fahrenheit": "°F", "Kelvin": "K"}
 api_units = unit_map[units]
 symbol = unit_symbol[units]
 
-# Fetch weather function
+# Weather fetcher
 @st.cache_data(show_spinner=True)
 def fetch_weather(city, units):
     url = "http://api.openweathermap.org/data/2.5/forecast"
@@ -41,12 +53,15 @@ def wind_direction(degree):
     ix = int((degree + 22.5) // 45) % 8
     return dirs[ix]
 
-# Handle click
+# Handle user input and store results
 if submit:
+    city = city_input.strip() if city_input else detect_location()
     st.session_state.weather_data = fetch_weather(city, api_units)
     st.session_state.stored_city = city
 
-# Display only if we have cached weather
+# Main display
+st.title("🌍 Pro Weather App")
+
 if st.session_state.weather_data:
     city = st.session_state.stored_city
     data = st.session_state.weather_data
@@ -58,6 +73,7 @@ if st.session_state.weather_data:
         lat = data["city"]["coord"]["lat"]
         lon = data["city"]["coord"]["lon"]
 
+        # Parse forecast
         times, temps, hums, winds, wind_dirs, rains = [], [], [], [], [], []
         for f in forecasts:
             dt = datetime.strptime(f["dt_txt"], "%Y-%m-%d %H:%M:%S")
@@ -79,7 +95,8 @@ if st.session_state.weather_data:
             "Rainfall (mm)": rains
         })
 
-        tab1, tab2 = st.tabs(["📍 Current", "📅 Forecast"])
+        tab1, tab2 = st.tabs(["📍 Current", "📆 Forecast"])
+
         with tab1:
             st.subheader(f"Weather in {city}")
             st.metric("Temperature", f"{temps[0]} {symbol}")
@@ -91,7 +108,7 @@ if st.session_state.weather_data:
             st_folium(m, height=350, width=700)
 
         with tab2:
-            st.subheader("📈 Forecast Charts")
-            st.line_chart(df.set_index("Datetime")[[f"Temperature ({symbol})", "Humidity (%)", f"Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})", "Rainfall (mm)"]])
-            with st.expander("📋 Detailed Forecast Table"):
-                st.dataframe(df)
+            st.subheader("Hourly Forecast")
+            st.line_chart(df.set_index("Datetime")[[f"Temperature ({symbol})", "Humidity (%)"]])
+            st.subheader("📋 Forecast Table")
+            st.dataframe(df)
