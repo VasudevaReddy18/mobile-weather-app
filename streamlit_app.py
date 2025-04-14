@@ -53,27 +53,43 @@ def wind_direction(degree):
     ix = int((degree + 22.5) // 45) % 8
     return dirs[ix]
 
-# Get background style based on weather condition
+# Background styling
 def get_background_style(weather_main):
     if "clear" in weather_main.lower():
-        return "background-color: #87CEEB;"  # Light blue
+        return "background-color: #87CEEB;"
     elif "rain" in weather_main.lower():
-        return "background-color: #a9a9a9;"  # Gray
+        return "background-color: #a9a9a9;"
     elif "snow" in weather_main.lower():
-        return "background-color: #f0f8ff;"  # Light snowy
+        return "background-color: #f0f8ff;"
     elif "thunderstorm" in weather_main.lower():
-        return "background-color: #4b0082;"  # Indigo
+        return "background-color: #4b0082;"
     else:
-        return "background-color: #ffffff;"  # Default white
+        return "background-color: #ffffff;"
 
-# Handle user input
+# Weather emoji mapper
+def get_weather_emoji(condition):
+    condition = condition.lower()
+    if "cloud" in condition:
+        return "☁️"
+    elif "rain" in condition:
+        return "🌧️"
+    elif "clear" in condition:
+        return "☀️"
+    elif "storm" in condition or "thunder" in condition:
+        return "🌩️"
+    elif "snow" in condition:
+        return "❄️"
+    else:
+        return "🌈"
+
+# Handle input
 if submit:
     city = city_input.strip() if city_input else detect_location()
     st.session_state.weather_data = fetch_weather(city, api_units)
     st.session_state.stored_city = city
 
-# MAIN UI
-st.title("🌤️ Pro Weather App — Phase 2")
+# Display
+st.title("🌤️ Pro Weather App — Phase 2.5")
 
 if st.session_state.weather_data:
     city = st.session_state.stored_city
@@ -84,13 +100,13 @@ if st.session_state.weather_data:
     else:
         forecasts = data["list"]
         weather_main = forecasts[0]["weather"][0]["main"]
+        weather_icon = get_weather_emoji(weather_main)
         bg_style = get_background_style(weather_main)
         st.markdown(f"<style>.stApp {{{bg_style}}}</style>", unsafe_allow_html=True)
 
         lat = data["city"]["coord"]["lat"]
         lon = data["city"]["coord"]["lon"]
 
-        # Parse forecast
         times, temps, hums, winds, wind_dirs, rains = [], [], [], [], [], []
         for f in forecasts:
             dt = datetime.strptime(f["dt_txt"], "%Y-%m-%d %H:%M:%S")
@@ -105,31 +121,31 @@ if st.session_state.weather_data:
 
         df = pd.DataFrame({
             "Datetime": times,
-            f"Temperature ({symbol})": temps,
-            "Humidity (%)": hums,
-            f"Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})": winds,
-            "Wind Direction": wind_dirs,
-            "Rainfall (mm)": rains
+            f"🌡️ Temperature ({symbol})": temps,
+            "💧 Humidity (%)": hums,
+            f"💨 Wind Speed ({'m/s' if api_units != 'imperial' else 'mph'})": winds,
+            "🌬️ Wind Direction": wind_dirs,
+            "🌧️ Rainfall (mm)": rains
         })
 
         tab1, tab2 = st.tabs(["📍 Current", "📆 Forecast"])
 
         with tab1:
-            st.subheader(f"Weather in {city} — {weather_main}")
-            st.metric("Temperature", f"{temps[0]} {symbol}")
-            st.metric("Humidity", f"{hums[0]}%")
-            st.metric("Wind", f"{winds[0]} {'m/s' if api_units != 'imperial' else 'mph'} {wind_dirs[0]}")
+            st.subheader(f"{weather_icon} Weather in {city} — {weather_main}")
+            st.metric("🌡️ Temperature", f"{temps[0]} {symbol}")
+            st.metric("💧 Humidity", f"{hums[0]}%")
+            st.metric("💨 Wind", f"{winds[0]} {'m/s' if api_units != 'imperial' else 'mph'} {wind_dirs[0]}")
 
             m = folium.Map(location=[lat, lon], zoom_start=10)
-            folium.Marker([lat, lon], tooltip=city).add_to(m)
+            popup_content = f"{weather_icon} {city}<br>Temp: {temps[0]} {symbol}"
+            folium.Marker([lat, lon], tooltip=popup_content, popup=popup_content).add_to(m)
 
-            # Add radar tiles (OpenWeatherMap)
             tile_url = f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}"
             folium.raster_layers.TileLayer(tiles=tile_url, attr="OpenWeatherMap Clouds", name="Clouds").add_to(m)
             st_folium(m, height=350, width=700)
 
         with tab2:
-            st.subheader("Hourly Forecast")
-            st.line_chart(df.set_index("Datetime")[[f"Temperature ({symbol})", "Humidity (%)"]])
+            st.subheader("📈 Hourly Forecast")
+            st.line_chart(df.set_index("Datetime")[df.columns[:2]])
             st.subheader("📋 Forecast Table")
             st.dataframe(df)
