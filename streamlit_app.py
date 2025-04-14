@@ -146,6 +146,8 @@ if st.session_state.weather_data:
 
         with tab2:
             st.subheader("📈 Hourly Forecast")
-            st.line_chart(df.set_index("Datetime")[df.columns[:2]])
+            temp_col = f"🌡️ Temperature ({symbol})"
+hum_col = "💧 Humidity (%)"
+st.line_chart(df.set_index("Datetime")[[temp_col, hum_col]])
             st.subheader("📋 Forecast Table")
             st.dataframe(df)
