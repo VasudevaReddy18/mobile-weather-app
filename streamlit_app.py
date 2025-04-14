@@ -53,14 +53,27 @@ def wind_direction(degree):
     ix = int((degree + 22.5) // 45) % 8
     return dirs[ix]
 
-# Handle user input and store results
+# Get background style based on weather condition
+def get_background_style(weather_main):
+    if "clear" in weather_main.lower():
+        return "background-color: #87CEEB;"  # Light blue
+    elif "rain" in weather_main.lower():
+        return "background-color: #a9a9a9;"  # Gray
+    elif "snow" in weather_main.lower():
+        return "background-color: #f0f8ff;"  # Light snowy
+    elif "thunderstorm" in weather_main.lower():
+        return "background-color: #4b0082;"  # Indigo
+    else:
+        return "background-color: #ffffff;"  # Default white
+
+# Handle user input
 if submit:
     city = city_input.strip() if city_input else detect_location()
     st.session_state.weather_data = fetch_weather(city, api_units)
     st.session_state.stored_city = city
 
-# Main display
-st.title("🌍 Pro Weather App")
+# MAIN UI
+st.title("🌤️ Pro Weather App — Phase 2")
 
 if st.session_state.weather_data:
     city = st.session_state.stored_city
@@ -70,6 +83,10 @@ if st.session_state.weather_data:
         st.error(f"Error: {data.get('message')}")
     else:
         forecasts = data["list"]
+        weather_main = forecasts[0]["weather"][0]["main"]
+        bg_style = get_background_style(weather_main)
+        st.markdown(f"<style>.stApp {{{bg_style}}}</style>", unsafe_allow_html=True)
+
         lat = data["city"]["coord"]["lat"]
         lon = data["city"]["coord"]["lon"]
 
@@ -98,13 +115,17 @@ if st.session_state.weather_data:
         tab1, tab2 = st.tabs(["📍 Current", "📆 Forecast"])
 
         with tab1:
-            st.subheader(f"Weather in {city}")
+            st.subheader(f"Weather in {city} — {weather_main}")
             st.metric("Temperature", f"{temps[0]} {symbol}")
             st.metric("Humidity", f"{hums[0]}%")
             st.metric("Wind", f"{winds[0]} {'m/s' if api_units != 'imperial' else 'mph'} {wind_dirs[0]}")
 
             m = folium.Map(location=[lat, lon], zoom_start=10)
             folium.Marker([lat, lon], tooltip=city).add_to(m)
+
+            # Add radar tiles (OpenWeatherMap)
+            tile_url = f"https://tile.openweathermap.org/map/clouds_new/{{z}}/{{x}}/{{y}}.png?appid={API_KEY}"
+            folium.raster_layers.TileLayer(tiles=tile_url, attr="OpenWeatherMap Clouds", name="Clouds").add_to(m)
             st_folium(m, height=350, width=700)
 
         with tab2:
