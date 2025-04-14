@@ -138,7 +138,9 @@ if data:
 
         with tab2:
             st.subheader("📈 Hourly Forecast")
-            st.line_chart(df.set_index("Datetime")[[df.columns[0], df.columns[1]]])
+            temp_col = [col for col in df.columns if "Temperature" in col or "तापमान" in col or "ఉష్ణోగ్రత" in col][0]
+hum_col = [col for col in df.columns if "Humidity" in col or "नमी" in col or "ఆర్ద్రత" in col][0]
+st.line_chart(df.set_index("Datetime")[[temp_col, hum_col]])
             st.subheader("📋 Forecast Table")
             st.dataframe(df)
 
