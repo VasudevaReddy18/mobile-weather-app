@@ -8,7 +8,7 @@ from streamlit_folium import st_folium
 st.set_page_config(page_title="Real Weather App", layout="wide")
 
 # Load API key (replace with st.secrets["API_KEY"] on cloud)
-API_KEY = "your_openweathermap_api_key_here"
+API_KEY = "c2dcf9d6f8c83d0bf6cd5c937aaad189"
 
 @st.cache_data
 def detect_location():
