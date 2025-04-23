@@ -1,52 +1,67 @@
 import streamlit as st
+import pandas as pd
+import requests
+from datetime import datetime
 
-st.set_page_config(page_title="Unified Real Weather App", layout="wide")
+st.set_page_config(page_title="Pro Weather App", layout="wide")
 
-st.title("🌈 Real Weather App - Unified Version")
-st.markdown("### 🌦️ Forecast | 📢 Alerts | 🧭 Radar | 🎙️ Voice | 👕 AI Tips | 🎨 Colorful UI")
-
-# Session state setup
+# Session state
 if "city" not in st.session_state:
-    st.session_state.city = "Auto-detect"
+    st.session_state.city = "New York"
+if "data" not in st.session_state:
+    st.session_state.data = {}
 
 # Sidebar settings
-st.sidebar.header("Settings")
-units = st.sidebar.selectbox("Units", ["Celsius", "Fahrenheit", "Kelvin"])
-theme = st.sidebar.radio("Theme", ["Light", "Dark"])
-voice_toggle = st.sidebar.checkbox("🎙️ Enable Voice Input")
-alerts_toggle = st.sidebar.checkbox("⚠️ Show Severe Weather Alerts")
-compare_toggle = st.sidebar.checkbox("📊 Enable Multi-City Comparison")
-show_uv = st.sidebar.checkbox("☀️ Show UV & AQI Index")
+st.sidebar.title("Settings")
+unit = st.sidebar.radio("Units", ["metric", "imperial"])
+symbol = "°C" if unit == "metric" else "°F"
+city = st.sidebar.text_input("Enter city", st.session_state.city)
+submit = st.sidebar.button("Get Weather")
 
-st.sidebar.text_input("Enter city", key="city")
-st.sidebar.button("Get Weather")
+# Fetch weather
+def get_weather(city, unit):
+    API_KEY = "your_api_key_here"  # replace on Streamlit Cloud with secrets
+    url = "http://api.openweathermap.org/data/2.5/forecast"
+    params = {"q": city, "appid": API_KEY, "units": unit}
+    response = requests.get(url, params=params).json()
+    return response
 
-# Main App Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🌤️ Current Forecast", "📍 Radar", "🧠 AI Clothing Tips", "📊 Multi-City"])
+# Parse and display
+def render_forecast(data):
+    st.subheader(f"📍 Forecast for {data['city']['name']}")
+    forecasts = data["list"]
+    times, temps, hums = [], [], []
+    for entry in forecasts:
+        dt = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
+        times.append(dt)
+        temps.append(entry["main"]["temp"])
+        hums.append(entry["main"]["humidity"])
 
+    df = pd.DataFrame({"Time": times, f"Temp ({symbol})": temps, "Humidity (%)": hums})
+    st.line_chart(df.set_index("Time")[[f"Temp ({symbol})", "Humidity (%)"]])
+    st.dataframe(df)
+
+# App layout
+st.title("🌦️ Pro Weather App - Final Version")
+if submit:
+    st.session_state.city = city
+    data = get_weather(city, unit)
+    if data.get("cod") == "200":
+        st.session_state.data = data
+    else:
+        st.error("City not found or API error.")
+
+if st.session_state.data:
+    render_forecast(st.session_state.data)
+
+# Tabs for new features (placeholders for now)
+tab1, tab2, tab3 = st.tabs(["🌍 Multi-City", "🎙️ Voice Input", "👕 AI Clothing Tips"])
 with tab1:
-    st.subheader("📍 Weather in Selected City")
-    st.metric("🌡️ Temperature", "28 °C")
-    st.metric("💧 Humidity", "70%")
-    st.metric("💨 Wind", "12 km/h NE")
-    if alerts_toggle:
-        st.warning("⚠️ Thunderstorm alert in your region!")
-    st.line_chart([22, 23, 25, 28, 29, 26, 24])
-
+    st.write("Compare multiple cities - Coming Soon")
 with tab2:
-    st.subheader("🗺️ Radar Map with Cloud Movement")
-    st.text("Dynamic radar and forecast layers coming soon...")
-
+    st.write("Voice input integration - Coming Soon")
 with tab3:
-    st.subheader("👕 AI Clothing Suggestions")
-    st.info("It’s warm and humid. Wear light clothes and carry water. 🌞💧")
+    st.write("Based on humidity/temperature - Suggest light clothes or jacket")
 
-with tab4:
-    if compare_toggle:
-        st.subheader("📊 Comparing Hyderabad vs Mumbai")
-        st.bar_chart({"Hyderabad": [32, 35, 31], "Mumbai": [30, 34, 33]})
-
-# Footer
 st.markdown("---")
-st.caption("Unified Real Weather App | Phase 4+ | All features combined")
-
+st.caption("🔁 Unified version of Real Weather App with full forecast and future features")
