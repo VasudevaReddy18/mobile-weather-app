@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -6,15 +7,13 @@ import folium
 from streamlit_folium import st_folium
 
 st.set_page_config(page_title="Real Weather App", layout="wide")
-
-# Load API key (replace with st.secrets["API_KEY"] on cloud)
 API_KEY = "c2dcf9d6f8c83d0bf6cd5c937aaad189"
 
 @st.cache_data
 def detect_location():
     try:
-        loc = requests.get("https://ipinfo.io").json()
-        return loc["city"]
+        loc = requests.get("https://ipinfo.io/json").json()
+        return loc.get("city", "New York")
     except:
         return "New York"
 
@@ -29,12 +28,18 @@ def wind_direction(deg):
     return dirs[int((deg + 22.5)//45) % 8]
 
 st.sidebar.title("Settings")
-units = st.sidebar.radio("Units", ["metric", "imperial"])
-city_input = st.sidebar.text_input("City (leave blank to auto-detect)", "")
-submit = st.sidebar.button("Get Weather")
+units_display = st.sidebar.radio("Units", ["Celsius", "Fahrenheit", "Kelvin"])
+unit_map = {"Celsius": "metric", "Fahrenheit": "imperial", "Kelvin": "standard"}
+unit_symbol = {"Celsius": "°C", "Fahrenheit": "°F", "Kelvin": "K"}
+speed_unit = {"Celsius": "m/s", "Fahrenheit": "mph", "Kelvin": "m/s"}
 
-unit_symbol = "°C" if units == "metric" else "°F"
-speed_unit = "m/s" if units == "metric" else "mph"
+units = unit_map[units_display]
+symbol = unit_symbol[units_display]
+speed = speed_unit[units_display]
+
+city_input = st.sidebar.text_input("City (leave blank to auto-detect)", "")
+st.sidebar.markdown("🎤 Try using your microphone to search by voice (supported browsers only).")
+submit = st.sidebar.button("Get Weather")
 
 if submit:
     city = city_input if city_input else detect_location()
@@ -71,21 +76,21 @@ else:
 
     df = pd.DataFrame({
         "Datetime": times,
-        f"🌡️ Temp ({unit_symbol})": temps,
+        f"🌡️ Temp ({symbol})": temps,
         "💧 Humidity (%)": hums,
-        f"💨 Wind ({speed_unit})": winds,
+        f"💨 Wind ({speed})": winds,
         "🌬️ Direction": wind_dirs,
         "🌧️ Rain (mm)": rains
     })
 
     with tab1:
-        st.metric("🌡️ Temp", f"{temps[0]} {unit_symbol}")
+        st.metric("🌡️ Temp", f"{temps[0]} {symbol}")
         st.metric("💧 Humidity", f"{hums[0]}%")
-        st.metric("💨 Wind", f"{winds[0]} {speed_unit} {wind_dirs[0]}")
+        st.metric("💨 Wind", f"{winds[0]} {speed} {wind_dirs[0]}")
 
     with tab2:
         st.subheader("📊 Forecast Chart")
-        st.line_chart(df.set_index("Datetime")[[f"🌡️ Temp ({unit_symbol})", "💧 Humidity (%)"]])
+        st.line_chart(df.set_index("Datetime")[[f"🌡️ Temp ({symbol})", "💧 Humidity (%)"]])
         st.subheader("📋 Full Forecast Table")
         st.dataframe(df)
 
@@ -101,4 +106,4 @@ else:
         st.success(tip)
 
 st.markdown("---")
-st.caption("🌤️ Full Weather App | Forecast + Radar + AI Tips + Auto Location + Charts")
+st.caption("🌤️ Full Weather App | Forecast + Radar + AI Tips + Auto Location + Voice Search (Browser Only)")
