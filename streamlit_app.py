@@ -13,9 +13,9 @@ API_KEY = "c2dcf9d6f8c83d0bf6cd5c937aaad189"
 def detect_location():
     try:
         loc = requests.get("https://ipinfo.io/json").json()
-        return loc.get("city", "New York")
+        return loc.get("city", "Thailavaram")
     except:
-        return "New York"
+        return "potheri"
 
 @st.cache_data
 def fetch_weather(city, units):
